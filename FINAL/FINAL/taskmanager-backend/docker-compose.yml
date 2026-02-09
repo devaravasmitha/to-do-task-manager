@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: taskmanager-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: task_manager_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  backend:
+    build: .
+    container_name: taskmanager-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/task_manager_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root123
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:

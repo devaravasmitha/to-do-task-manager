@@ -1,0 +1,211 @@
+<div class="page">
+
+  <!-- USER HEADER -->
+  <div class="user-header">
+    <div class="header">
+      <h1>TaskFlow</h1>
+      <p>Organize your work, beautifully</p>
+    </div>
+
+    <div *ngIf="currentUser" class="user-info">
+      <span class="user-email">👤 {{ currentUser.email }}</span>
+      <button class="logout-btn" (click)="logout()">🚀 Logout</button>
+    </div>
+  </div>
+
+  <!-- ADD TASK -->
+  <div class="card">
+    <h2>Add New Task</h2>
+
+    <!-- TITLE -->
+    <input
+      type="text"
+      placeholder="Task title"
+      [(ngModel)]="newTask.title"
+      name="title"
+    />
+
+    <!-- DESCRIPTION -->
+    <textarea
+      placeholder="Task description"
+      [(ngModel)]="newTask.description"
+      name="description">
+    </textarea>
+
+    <!-- ADD PERSON -->
+    <div class="person-input">
+      <input
+        type="text"
+        placeholder="Enter Person Name"
+        [(ngModel)]="personName"
+        name="personName"
+      />
+
+      <input
+        type="email"
+        placeholder="Enter Person Email"
+        [(ngModel)]="personEmail"
+        name="personEmail"
+      />
+
+      <button type="button" (click)="addPerson()">+ Add</button>
+    </div>
+
+    <!-- SHOW ADDED PEOPLE -->
+    <div class="people-list" *ngIf="newTask.assignedTo.length > 0">
+      <div
+        class="person-chip"
+        *ngFor="let person of newTask.assignedTo; let i = index">
+
+        <div class="person-details">
+          <span class="person-name">{{ person.name }}</span>
+          <span class="person-email">{{ person.email }}</span>
+        </div>
+
+        <button type="button" (click)="removePerson(i)">×</button>
+      </div>
+    </div>
+
+    <!-- DATE -->
+    <input
+      type="date"
+      [(ngModel)]="newTask.dueDate"
+      [min]="todayDate"
+      name="dueDate"
+    />
+
+    <!-- ERROR MESSAGE -->
+    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+
+    <!-- ADD TASK -->
+    <button type="button" class="add-btn" (click)="addTask()" [disabled]="isSubmitting">
+      {{ isSubmitting ? 'Adding...' : '+ Add Task' }}
+    </button>
+  </div>
+
+  <!-- TASK LIST & FILTERS -->
+  <div class="card">
+    <div class="task-list-header">
+      <h2>Your Tasks</h2>
+      
+      <!-- FILTERS -->
+      <div class="filters">
+        <button 
+          class="filter-btn" 
+          [class.active]="filterStatus === 'ALL'"
+          (click)="filterStatus = 'ALL'">
+          All
+        </button>
+        <button 
+          class="filter-btn pending" 
+          [class.active]="filterStatus === 'PENDING'"
+          (click)="filterStatus = 'PENDING'">
+          Pending
+        </button>
+        <button 
+          class="filter-btn completed" 
+          [class.active]="filterStatus === 'COMPLETED'"
+          (click)="filterStatus = 'COMPLETED'">
+          Completed
+        </button>
+
+        <!-- SORT -->
+        <button 
+          class="filter-btn sort"
+          [class.active]="sortByDate"
+          (click)="sortByDate = !sortByDate">
+          📅 {{ sortByDate ? 'Sorted by Date' : 'Sort by Date' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div *ngIf="getFilteredAndSortedTasks().length === 0" class="empty-state">
+      <p>No tasks found. Create one to get started! 🚀</p>
+    </div>
+
+    <!-- TASKS LIST -->
+    <div
+      *ngFor="let task of getFilteredAndSortedTasks()"
+      class="task"
+      [class.completed]="task.status === 'COMPLETED'">
+
+      <!-- EDIT MODE -->
+      <div *ngIf="editingTaskId === task.id" class="edit-form">
+        <h4>Edit Task</h4>
+        
+        <input
+          type="text"
+          placeholder="Task title"
+          [(ngModel)]="editingTask!.title"
+          name="editTitle"
+        />
+
+        <textarea
+          placeholder="Task description"
+          [(ngModel)]="editingTask!.description"
+          name="editDescription">
+        </textarea>
+
+        <input
+          type="date"
+          [(ngModel)]="editingTask!.dueDate"
+          [min]="todayDate"
+          name="editDueDate"
+        />
+
+        <div class="edit-actions">
+          <button class="save-btn" (click)="saveEditTask()" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Saving...' : 'Save' }}
+          </button>
+          <button class="cancel-btn" (click)="cancelEditTask()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- VIEW MODE -->
+      <div *ngIf="editingTaskId !== task.id" class="task-content">
+        <div>
+          <div class="task-header">
+            <h3>{{ task.title }}</h3>
+            <span class="status-badge" [class.pending]="task.status === 'PENDING'" [class.completed]="task.status === 'COMPLETED'">
+              {{ task.status }}
+            </span>
+          </div>
+          <p class="task-description">{{ task.description }}</p>
+
+          <p *ngIf="task.dueDate" class="date">
+            📅 Due: {{ task.dueDate | date:'dd MMM yyyy' }}
+          </p>
+
+          <!-- PEOPLE DISPLAY -->
+          <div class="people-list" *ngIf="task.assignedTo.length">
+            <div
+              class="person-chip"
+              *ngFor="let person of task.assignedTo">
+
+              <div class="person-details">
+                <span class="person-name">{{ person.name }}</span>
+                <span class="person-email">{{ person.email }}</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="edit" (click)="startEditTask(task)">
+            ✏️ Edit
+          </button>
+          <button class="status" (click)="markDone(task)">
+            {{ task.status === 'COMPLETED' ? '↩️ Undo' : '✓ Done' }}
+          </button>
+          <button class="delete" (click)="deleteTask(task.id!)">
+            🗑️ Delete
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
